@@ -16,9 +16,9 @@ function [rmse,h] = plot_results(model, idd_training, idd_validation, training_T
     subplot(2,1,1)
     timevec = 0:training_Ts:((length(idd_training.InputData)-1)*training_Ts);
     [y_out, time] = lsim(model, idd_training.InputData, timevec);
-    plot(time, y_out, "LineWidth", 1.5)
+    plot(time, y_out, "LineWidth",1.3)
     hold on
-    plot(timevec, idd_training.OutputData, "LineWidth", 1.5);
+    plot(timevec, idd_training.OutputData, "--");
     ylabel("Angula vel (deg/s)")
     legend({"model", "sensor"}, 'location', 'northwest')
     title("Training data")
@@ -30,15 +30,15 @@ function [rmse,h] = plot_results(model, idd_training, idd_validation, training_T
     
     timevec = 0:validation_Ts:((length(idd_validation.InputData)-1)*validation_Ts);
     [y_out, time] = lsim(model, idd_validation.InputData(1:end), timevec(1:end));
-    plot(time, y_out, "-")
+    plot(time, y_out, "LineWidth",1.3)
     ylabel("Angular vel (deg/s)")
     xlabel("Time (sec)")
     hold on
-    plot(timevec(1:end), idd_validation.OutputData(1:end));
+    plot(timevec(1:end), idd_validation.OutputData(1:end), "--");
     title("Validation data")
+
     h2 = gca;
-    
-    linkaxes([h1, h2], 'x')
+    % linkaxes([h1, h2], 'x')
     
     rmse(1).name = "Validation set " + string(1) + " result";
     rmse(1).value = rms(y_out - idd_validation.OutputData);

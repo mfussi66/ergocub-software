@@ -62,7 +62,7 @@ int main(int argc, char * argv[])
     IControlMode* iCm{ nullptr };
     IEncoders* iEnc{ nullptr };
     IPidControl* iPid{ nullptr };
-    std::vector<double> pwm_values{10, 25, 50, 75};
+    std::vector<double> pwm_values{-30, -40, -50, -70};
     std::ofstream file;
 
     file.open(filename);
@@ -108,44 +108,49 @@ int main(int argc, char * argv[])
     // drives the joint between +20/-20 degrees for each vlaue of PWM stored in pwm_values
     for(auto pwm : pwm_values) {
         uint t = 0;
-        for(int i=0; i<cycles*2; i++) {
-        auto done_h = false;
-        auto done_l = false;
-        done = false;
-        pwm = pwm * -1;
-        iPwm->setRefDutyCycle(joint_id,pwm);
+        for(int i=0; i < cycles * 2; i++) {
+          auto done_h = false;
+          auto done_l = false;
+          done = false;
+          pwm = pwm * -1;
+          iPwm->setRefDutyCycle(joint_id,pwm);
+          t = 0;
+          yInfo() << "pwm " << pwm << " cycle " << i;
 
-        while((!done_h || !done_l) && t < timeout) {
-            data.t = Time::now() - t0;
-            data.pwm_set = pwm;
-            iEnc->getEncoder(joint_id, &data.enc);
-            iPid->getPidOutput(VOCAB_PIDTYPE_POSITION, joint_id, &data.pid_out);
-            iPwm->getDutyCycle(joint_id, &data.pwm_read);
+          while((!done_h || !done_l) && t < timeout) {
+              data.t = Time::now() - t0;
+              data.pwm_set = pwm;
+              iEnc->getEncoder(joint_id, &data.enc);
+              iPid->getPidOutput(VOCAB_PIDTYPE_POSITION, joint_id, &data.pid_out);
+              iPwm->getDutyCycle(joint_id, &data.pwm_read);
 
+              yInfoThrottle(0.5) << "t " << t << " timeout " << timeout; 
 
-            // if the joint exceeds +20/-20 degrees invert the PWM
-            if (Time::now() - t1 >= .001) {
-        //       yDebug() << data.pwm << " " << data.enc;
-                t ++;
-                if(data.enc > threshold) {
-                    if(!done_h) {
-                        pwm = pwm * -1;
-                        iPwm->setRefDutyCycle(joint_id, pwm);
-                        done_h = true;
+              // if the joint exceeds +20/-20 degrees invert the PWM
+              if (Time::now() - t1 >= .001) {
+          //       yDebug() << data.pwm << " " << data.enc;
+                  t ++;
+                  if(data.enc > threshold && pwm < 0) {
+                      if(!done_h) {
+                          pwm = pwm * -1;
+                          iPwm->setRefDutyCycle(joint_id, pwm);
+                          done_h = true;
+                          yDebug() << "done h";
 
-                    }
-                }
-                else if(data.enc < threshold * -1) {
-                    if(!done_l){
-                        pwm = pwm * -1;
-                        iPwm->setRefDutyCycle(joint_id, pwm);
-                        done_l = true;
-                    }
-                }
-                data_vec.push_back(std::move(data));
-                t1 = Time::now();
-            }
-        }
+                      }
+                  }
+                  else if(data.enc < 10  && pwm > 0) {
+                      if(!done_l){
+                          pwm = pwm * -1;
+                          iPwm->setRefDutyCycle(joint_id, pwm);
+                          done_l = true;
+                          yDebug() << "done l";
+                      }
+                  }
+                  data_vec.push_back(std::move(data));
+                  t1 = Time::now();
+              }
+          }
         }
 
     }
