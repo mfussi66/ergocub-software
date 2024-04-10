@@ -51,6 +51,8 @@ int main(int argc, char * argv[])
     auto joint_id = rf.check("joint-id", Value(1)).asInt8();
     auto cycles = rf.check("cycles", Value(10)).asInt32();
     auto threshold = rf.check("threshold", Value(20)).asInt32();
+
+
     auto timeout = rf.check("timeout", Value(5000)).asInt32();
     auto filename = rf.check("filename", Value("output.csv")).asString();
 
@@ -108,7 +110,7 @@ int main(int argc, char * argv[])
     // drives the joint between +20/-20 degrees for each vlaue of PWM stored in pwm_values
     for(auto pwm : pwm_values) {
         uint t = 0;
-        for(int i=0; i < cycles * 2; i++) {
+        for(int i=0; i < cycles; i++) {
           auto done_h = false;
           auto done_l = false;
           done = false;
@@ -128,7 +130,6 @@ int main(int argc, char * argv[])
 
               // if the joint exceeds +20/-20 degrees invert the PWM
               if (Time::now() - t1 >= .001) {
-          //       yDebug() << data.pwm << " " << data.enc;
                   t ++;
                   if(data.enc > threshold && pwm < 0) {
                       if(!done_h) {
@@ -167,6 +168,7 @@ int main(int argc, char * argv[])
                 Time::yield();
             }
     // writes the log
+    yInfo() << "Writing data to file...";
     for (const auto& d : data_vec) {
             file << d.t << "," << d.pwm_read << ","
                 << d.enc << "," << d.pid_out << "," << d.pwm_set << std::endl;
